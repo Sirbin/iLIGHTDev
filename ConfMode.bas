@@ -242,15 +242,10 @@ Sub Astreams1_NewData (Buffer() As Byte)
 	Dim rpos As Long
 	u = u & BytesToString(Buffer, 0, Buffer.Length, "UTF8")
 	Main.str_ = Main.str_ & u 
-	'Log ("buffer lenght" & Buffer.Length)
 	Log(Main.str_)
-	'Log(str_.Length)
 	If Main.str_.Length > 180 Then
 		lpos=Main.str_.IndexOf("{")
 		rpos=Main.str_.IndexOf2("}",lpos+1)
-		'Log ("inizio" &lpos)
-		'Log ("fine" &rpos)
-		'rpos = str_.IndexOf("}")
 		If lpos < 0 Then
 			Log("lpos negativo ----------------------------------------------")
 			Main.str_=" "
@@ -258,12 +253,8 @@ Sub Astreams1_NewData (Buffer() As Byte)
 		If lpos>=0 Then
 			If rpos > lpos Then  	
 					Main.s = Main.sf.Mid(Main.str_,lpos+1,(rpos+lpos)+1)
-						'If str_.Length < 170 Then
 							json_interpreter1(Main.s)	'change the buffer'
-							Main.str_=Main.sf.Right(Main.str_,(Main.str_.Length-rpos)-1)
-						'Else 
-						'	str_=""
-						'End If 
+							Main.str_=Main.sf.Right(Main.str_,(Main.str_.Length-rpos)-1) 
 			End If
 		
 		End If 	
@@ -271,6 +262,9 @@ Sub Astreams1_NewData (Buffer() As Byte)
 End Sub
 
 Sub json_interpreter1 (jstr As String)
+	' Create a json map and controll the type of "pktype" if it's "hello" add in lstaddr'
+	'if "reply" controll the command and save in string, if "sensors take a date"
+	
 	Try 
 	Main.json.Initialize(jstr)
 	Main.map1.Initialize
@@ -318,7 +312,7 @@ Sub TimerColl_tick
 	
 End Sub	
 Sub Take_Address_Take_Pwm 
-' Pwm Valor of Address
+' Pwm Valor of Address and save in string, need when compare with real pwm'
 
 		If Main.map1.Get("address64") = "0x0013a20040be447f" Then
 				StrAddrPwm(4) = Main.map1.Get("pwm") 
@@ -332,7 +326,8 @@ Sub Take_Address_Take_Pwm
 		
 	End Sub 	
 Sub BT_StateChanged(NewState As Int,OldState As Int)
-
+	' connect to 3box '
+	
 	If NewState = Main.admin.STATE_ON Then
 		Connect_3box
 		Log("BT Connect")
@@ -343,6 +338,7 @@ Sub BT_StateChanged(NewState As Int,OldState As Int)
 	
 End Sub
 Sub Serial1_Connected (success As Boolean)
+' connect to serial Bt and ready to send the astream'
 
  Dim msg As String 
 	Try 
@@ -359,6 +355,7 @@ Sub Serial1_Connected (success As Boolean)
 	
 End Sub
 Sub Connect_3box 
+' add 3box in list and connect with it'
 
 	Public PariredDevices As Map
 	Dim MyDevice As String
@@ -372,10 +369,14 @@ Sub Connect_3box
 	
 End Sub	
 Sub Addres_tick
+	'read address read.wheel'
+	
 	Addres.ReadWheel 
+	
 End Sub 	
 Sub string_invPing(cmd As Int ,Addr As String)
-
+	'create type string'
+	
 	Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))
 	If cmd = 1 Then 				' Set Ping ON
 		invio_dati = "1," & Addr & ";"
@@ -396,8 +397,10 @@ Sub string_invPing(cmd As Int ,Addr As String)
 		invio_dati = "9," & Addr & ";"
 		'Log (invio_dati)
 	End If
+	
 End Sub	
 Sub string_inv(cmd As Int, Addr As String, value As Int )
+	'creare a second type string add a value takes to circle'
 	
 	Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))	
 	If cmd = 3 Then 				' Set Light Value
@@ -419,7 +422,8 @@ Sub string_inv(cmd As Int, Addr As String, value As Int )
 	
 End Sub 	
 Sub GoBack1_Click
-
+	'Button to return in Main Page'
+	
     If Main.admin.IsEnabled = True Then 
 		Main.admin.disable
 		Log("Bt as Disable")
@@ -430,6 +434,10 @@ Sub GoBack1_Click
 	
 End Sub
 Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
+	'circle value for pwn, if choice Groups stop timer1 and userchange set to false and read the value'
+	' the value is always Pwmvalue for all grousp , after start a timerstop that every 10 second controll'
+	' a value.'
+	' second types are based to single address'
 	
 	For index = 0 To PoliciesMode.StrAddr.Size	-1
 		If UserChanged = True  AND Addres.ReadWheel = PoliciesMode.StrAddr.Get(index) AND Set.ReadWheel = "yes" Then
@@ -470,6 +478,9 @@ Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
 
 End Sub
 Sub Timerstop_tick
+	'new'
+	'the timer that controll the value and send the right string_inv ground on numenb of sql address'
+	
 	sec = sec + 1
 	Log ("tIMER 1gruppo" & sec)		
 	Do While sec = 10 
@@ -493,6 +504,7 @@ Sub Timerstop_tick
 	
 End Sub
 Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
+	' Circle to presence need modify for Groups'
 	
 	If UserChanged AND	Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" Then
 		pwm_Pre0 = value
@@ -521,15 +533,53 @@ Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
 	
 End Sub
 Sub Circle2_ValueChanged(value As Int ,UserChanged As Boolean)
-	If UserChanged  AND Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" Then
+	'circle for follow need modify for Groups
 		If Timer3.Enabled = False Then 
 			Timer3.Enabled = True
 		End If 	
-		pwm_Foll0 = value
-		Log (pwm_Foll0)
-	End If
+		pwm_Foll3 = value
+		Log ("timer3" & pwm_Foll3)	
 End Sub 
 Sub Timer3_tick
+	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
+					string_inv(5,StrAddr(0),pwm_Foll3)
+					count = count + 1 
+					Log ("secondi" & count)
+				If count = 3 Then
+					Timer3.Enabled = False
+					count = 0
+					Log ("addr0" & pwm_to_timer0)
+				End If 
+	End If
+	If Addres.ReadWheel = StrAddr(1) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
+					string_inv(5,StrAddr(1),pwm_Foll3)
+					count = count + 1 
+					Log ("secondi" & count)
+				If count = 3 Then
+					Timer3.Enabled = False
+					count = 0
+				End If 
+	End If
+	If Addres.ReadWheel = StrAddr(2) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
+					string_inv(5,StrAddr(2),pwm_Foll3)
+					count = count + 1 
+					Log ("secondi" & count)
+				If count = 3 Then
+					Timer3.Enabled = False
+					count = 0
+				End If 
+	End If
+	If Addres.ReadWheel = StrAddr(3) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
+					string_inv(5,StrAddr(3),pwm_Foll3)
+					count = count + 1 
+					Log ("secondi" & count)
+				If count = 3 Then
+					Timer3.Enabled = False
+					count = 0
+				End If 
+	End If
+End Sub
+Sub daeliminare
 '	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND foll.ReadWheel = "PreLuxHi" Then
 '		If arr(1) <> pwm_Pre1 Then
 '			string_inv(10,StrAddr(1),pwm_Pre1)
@@ -658,7 +708,6 @@ Sub SetPingOn_Off
 	Else If Addres.ReadWheel = StrAddr(0) AND choice.ReadWheel = "Off" AND Set.ReadWheel = "yes" Then
 		string_invPing(2,StrAddr(0))
 		string_invPing(2,StrAddr(0))
-		'Circle.value = StrAddrPwm(4)
 		Timer1.Enabled = False
 	End If
 	If Addres.ReadWheel = StrAddr(1) AND choice.ReadWheel = "On" AND Set.ReadWheel = "yes" Then
@@ -666,7 +715,6 @@ Sub SetPingOn_Off
 	Else If Addres.ReadWheel = StrAddr(1) AND choice.ReadWheel = "Off" AND Set.ReadWheel = "yes" Then
 		string_invPing (2,StrAddr(1))
 		string_invPing (2,StrAddr(1))
-		'Circle.value = StrAddrPwm(5)
 		Timer1.Enabled = False
 	End If 
 	If Addres.ReadWheel = StrAddr(2) AND choice.ReadWheel = "On" AND Set.ReadWheel = "yes" Then
@@ -674,7 +722,6 @@ Sub SetPingOn_Off
 	Else If Addres.ReadWheel = StrAddr(2) AND choice.ReadWheel = "Off" AND Set.ReadWheel = "yes" Then
 		string_invPing (2,StrAddr(2))
 		string_invPing (2,StrAddr(2))
-		'Circle.value = StrAddrPwm(6)
 		Timer1.Enabled = False
 	End If 
 	If Addres.ReadWheel = StrAddr(3) AND choice.ReadWheel = "On" AND Set.ReadWheel = "yes" Then
@@ -682,7 +729,6 @@ Sub SetPingOn_Off
 	Else If Addres.ReadWheel = StrAddr(3) AND choice.ReadWheel = "Off" AND Set.ReadWheel = "yes" Then
 		string_invPing (2,StrAddr(3))
 		string_invPing (2,StrAddr(3))
-		'Circle.value = StrAddrPwm(7)
 		Timer1.Enabled = False
 	End If 	
 End Sub 	
@@ -804,92 +850,6 @@ End Sub
 Sub Set_tick
 	Set.ReadWheel
 End Sub 	
-'	If UserChanged Then
-'		ControllAddr(value)
-'	End If 	
-'		If Addres.ReadWheel = StrAddr(0) Then 
-'			lblFont = Typeface.LoadFromAssets("digi.ttf")
-'			String_inv(3,StrAddr(0),value)
-'		Else If  Addres.ReadWheel = StrAddr(1) Then
-'			lblFont = Typeface.LoadFromAssets("digi.ttf")
-'			String_inv(3,StrAddr(1),value)
-'		Else If Addres.ReadWheel = StrAddr(2) Then
-'			lblFont = Typeface.LoadFromAssets("digi.ttf)
-'			String_inv(3,StrAddr(2),value)
-'		Else If Addres.ReadWheel = StrAddr(3) Then
-'			String_inv(3,StrAddr(3),value)
-'			lblFont = Typeface.LoadFromAssets("digi.tff")
-' 		End If 
-'		lblLuxValue.TextSize = 80
-'		lblLuxValue.Text = value
-'		lblLuxValue.Typeface = lblFont
-'	End If 	
-'		If chk1.Checked = True Then 
-'			lbllux1.Text = value
-'			lbllux1.Typeface = lblFont
- 
-'Sub ControllAddr
-'	If Addres.ReadWheel = StrAddr(0) Then 
-'			Circle.Value = StrAddrPwm
-'	End If 		
-'End Sub	
-'	Else If  Addres.ReadWheel = StrAddr(1) Then
-'			lblFont = Typeface.LoadFromAssets("digi.ttf")
-'			String_inv(3,StrAddr(1),value)
-'		Else If Addres.ReadWheel = StrAddr(2) Then
-'			lblFont = Typeface.LoadFromAssets("digi.ttf")
-'			String_inv(3,StrAddr(2),value)
-'		Else If Addres.ReadWheel = StrAddr(3) Then
-'			String_inv(3,StrAddr(3),value)
-'			lblFont = Typeface.LoadFromAssets("digi.tff")
-' 		End If 
-'		lblLuxValue.TextSize = 80
-'		lblLuxValue.Text = value
-'		lblLuxValue.Typeface = lblFont
-
-'End Sub 
-'Sub Address_ItemClick (Position As Int, value As Object)
-'	Try
-'		If	value = dat(0) Then 
-'			myACET1.Visible = True
-'			myACET1.Text = something1
-'			lblLuxValue.Text = arr(4)
-'			Circle.value = arr(4)
-'			myACET1.BringToFront 	
-'		Else If value = dat(1)  Then
-'			'myACET1.Enabled = False 
-'			'myACET3.Visible = False 
-'			'myACET4.Visible = False
-'			myACET2.Visible = True
-'			myACET2.Text = something2
-'			lblLuxValue.Text = arr(5)
-'			Circle.value = arr(5)
-'			myACET2.BringToFront
-'		Else If value = "Ad_Nod3"  Then
-'			myACET2.Text = ""  
-'			myACET4.Text = ""
-'			myACET1.Text = ""
-'			myACET3.Text = arr(2)
-'			lblLuxValue.Text = arr(6)
-'    		Circle.value = arr(6)
-'			myACET3.BringToFront
-'		Else If value = "Ad_Nod4" Then
-'			myACET2.Text = "" 
-'			myACET3.Text = "" 
-'			myACET1.Text = ""
-'			myACET4.Text = arr(3)
-'			lblLuxValue.Text = arr(7)
-'			Circle.value = arr(7)
-'			myACET4.BringToFront	
-'		
-'		End If
-'	Catch
-'		Msgbox("Wait A correct address","Address")
-'	End Try	
-'End Sub
-
-
-
 Sub GoNext1_Click
 	'string_inv (5,StrAddr(3),10)
 '	string_inv (5,StrAddr(3),FollowLux.ReadWheel)
@@ -903,9 +863,6 @@ Sub Button2_Click
 End Sub
 Sub Button1_Click
 	'string_invPing (6,StrAddr(3))
-End Sub
-Sub SetAddress_CheckedChange(Checked As Boolean)
-	
 End Sub
 Sub SetGroups_Click
 	'Pulsante che cambia la lista da grouppo a address'
