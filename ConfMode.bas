@@ -11,12 +11,9 @@ B4A=true
 Sub Process_Globals
 	'These global variables will be declared once when the application starts.
 	'These variables can be accessed from all modules.
-   	Dim Timer1,Timer2 ,Timer3 As Timer
+   	
+	Dim Timer1,Timer2 ,Timer3 As Timer
 	Dim timercoll,TimerStop As Timer
-	'Public admin As BluetoothAdmin
-	'Public serial1 As Serial
-	'Public json As JSONParser
-	'Public map1 As Map
 	Public invio_dati As String 
 	Public StrAddrPwm(10) As Int
 	Public StrAddr1 As List ''' Prova si stringhe gia inserite
@@ -25,13 +22,12 @@ Sub Process_Globals
 	Public add(4) As String ' provvisoria
 	Public sec,count As Int 
 	
-	'Public lstaddr As List
-	'lstaddr.Initialize
 End Sub
 
 Sub Globals
 	'These global variables will be redeclared each time the activity is created.
 	'These variables can only be accessed from this module.
+	
 	Dim Addres,Set,choice,FollowLux, FollowLuxOn_Off , PresenceOn_OFF , PresenceHi_LOW ,DelayOn_Off As WheelView
 	Dim pwm_to_timer0 ,pwm_to_timer1,pwm_to_timer2,pwm_to_timer3 ,pwm_Pre0,pwm_Pre1,pwm_Pre2,pwm_Pre3 ,pwm_Foll0,pwm_Foll1,pwm_Foll2,pwm_Foll3 As Int 
 	Public Address As ListView
@@ -40,10 +36,6 @@ Sub Globals
 	Public GoBack1 As Button
 	Public Finish1 As Button
 	Dim Panel1 As Panel
-	'Dim str_,s As String
-	'Dim sf As StringFunctions
-   	'sf.Initialize
-	'Dim astreams1 As AsyncStreams
 	Public Label1 As Label
 	Dim l As List 
 	l.Initialize 
@@ -53,12 +45,12 @@ Sub Globals
 	Dim arr(5) As Int
 	Private SetAddress As ToggleButton
 	Private SetGroups As Button
-	
 	Dim Pwmvalue As Int ' valore del pwm generale per gruppi '
 	Dim LabAddress As Label
 End Sub
 
 Sub Activity_Create(FirstTime As Boolean)
+
 	If FirstTime Then 		
 		Main.admin.Initialize("BT")
 		Main.serial1.Initialize("Serial1")
@@ -85,8 +77,10 @@ Sub Activity_Create(FirstTime As Boolean)
 		Main.serial1.Connect(Main.l.Get(0))
 		Log ("connesso")
 	End If 
+	
 End Sub
 Sub Activity_Resume
+
     Log("this is activity resume")	 	
 	If Circle.IsInitialized = False OR Circle1.IsInitialized = False OR Circle2.IsInitialized = False Then
 		Activity.LoadLayout("configurationwizard")
@@ -114,6 +108,7 @@ Sub Activity_Resume
 		Main.serial1.Connect(Main.l.Get(0))
 		Log ("connesso resume")
 	End If 	
+	
 End Sub		
 Sub Label_create
 	'Create all Label for ReadWheal'
@@ -377,27 +372,48 @@ End Sub
 Sub string_invPing(cmd As Int ,Addr As String)
 	'create type string'
 	
-	Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))
-	If cmd = 1 Then 				' Set Ping ON
+	'Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))
+	Select cmd
+	Case 1
 		invio_dati = "1," & Addr & ";"
 		Log ("pingon" &invio_dati)
-	Else If cmd = 2 Then            ' Set Ping OFF
-		invio_dati = "2," & Addr & ";" 
+	Case 2 
+		invio_dati = "2," & Addr & ";"
 		Log ("pingoff" &invio_dati)
-	Else If cmd = 6 Then  			' Set Follow On
+	Case 6
 		invio_dati = "6," & Addr & ";"
 		Log (invio_dati)
-	Else If cmd = 7 Then			' Set Follow OFF
+	Case 7
 		invio_dati = "7," & Addr & ";"
 		Log (invio_dati)
-	Else If cmd = 8 Then			' Set Presence On
+	Case 8
 		invio_dati = "8," & Addr & ";"
-		'Log (invio_dati)
-	Else If cmd = 9 Then			' Set Presence OFF
+		Log (invio_dati)
+	Case 9
 		invio_dati = "9," & Addr & ";"
-		'Log (invio_dati)
-	End If
+		Log (invio_dati)
+	End Select
 	
+'	If cmd = 1 Then 				' Set Ping ON
+'		invio_dati = "1," & Addr & ";"
+'		Log ("pingon" &invio_dati)
+'	Else If cmd = 2 Then            ' Set Ping OFF
+'		invio_dati = "2," & Addr & ";" 
+'		Log ("pingoff" &invio_dati)
+'	Else If cmd = 6 Then  			' Set Follow On
+'		invio_dati = "6," & Addr & ";"
+'		Log (invio_dati)
+'	Else If cmd = 7 Then			' Set Follow OFF
+'		invio_dati = "7," & Addr & ";"
+'		Log (invio_dati)
+'	Else If cmd = 8 Then			' Set Presence On
+'		invio_dati = "8," & Addr & ";"
+'		Log (invio_dati)
+'	Else If cmd = 9 Then			' Set Presence OFF
+'		invio_dati = "9," & Addr & ";"
+'		Log (invio_dati)
+'	End If
+'	
 End Sub	
 Sub string_inv(cmd As Int, Addr As String, value As Int )
 	'creare a second type string add a value takes to circle'
@@ -482,7 +498,7 @@ Sub Timerstop_tick
 	'the timer that controll the value and send the right string_inv ground on numenb of sql address'
 	
 	sec = sec + 1
-	Log ("tIMER 1gruppo" & sec)		
+	Log ("Timer1 Gruppo" & sec)		
 	Do While sec = 10 
 		For i = 0 To PoliciesMode.StrAddr.Size -1 
 			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" Then
@@ -499,7 +515,7 @@ Sub Timerstop_tick
 		Next			
 		sec = 0
 		TimerStop.Enabled = False
-		Log ("timer 2gruppo" & sec)
+		Log ("Timer2 gruppo" & sec)
 	Loop	
 	
 End Sub
@@ -534,13 +550,16 @@ Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
 End Sub
 Sub Circle2_ValueChanged(value As Int ,UserChanged As Boolean)
 	'circle for follow need modify for Groups
+	
 		If Timer3.Enabled = False Then 
 			Timer3.Enabled = True
 		End If 	
 		pwm_Foll3 = value
 		Log ("timer3" & pwm_Foll3)	
+		
 End Sub 
 Sub Timer3_tick
+
 	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
 					string_inv(5,StrAddr(0),pwm_Foll3)
 					count = count + 1 
@@ -597,9 +616,12 @@ Sub daeliminare
 '	End If
 End Sub
 Sub PresenceHi_LOW_tick
+
 	PresenceHi_LOW.ReadWheel
+	
 End Sub
 Sub Timer2_tick
+
 	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND PresenceHi_LOW.ReadWheel = "PreLuxHi" Then
 		If arr(1) <> pwm_Pre0 Then
 			string_inv(10,StrAddr(0),pwm_Pre0)
@@ -663,9 +685,12 @@ Sub Timer2_tick
 End Sub 
 	
 Sub PresenceOn_OFF_tick
+
 	presenceOnOff
 End Sub 
+
 Sub presenceOnOff
+
 	If Addres.ReadWheel = StrAddr(0) AND PresenceOn_OFF.ReadWheel = "PresOn" AND Set.ReadWheel = "yes" Then
 		string_invPing(8,StrAddr(0))
 		Timer1.Enabled = False
@@ -703,6 +728,30 @@ Sub choice_tick
 	SetPingOn_Off
 End Sub	
 Sub SetPingOn_Off
+	'new'
+	'set Ping on Groups and single Address"
+	
+	For i = 0 To PoliciesMode.StrAddr.Size -1 
+			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND choice.ReadWheel = "On" Then
+				Dim cursor1 As Cursor
+				cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String 
+		    			Adrquery = cursor1.GetString("Address")
+						string_invPing(1,Adrquery) 	
+					Next
+			Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND choice.ReadWheel = "Off" Then
+				Dim cursor1 As Cursor
+				cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String 
+		    			Adrquery = cursor1.GetString("Address")
+						string_invPing(2,Adrquery) 	
+					Next
+			End If	
+	Next	
 	If Addres.ReadWheel = StrAddr(0) AND choice.ReadWheel = "On" AND Set.ReadWheel = "yes" Then
 		string_invPing(1,StrAddr(0))
 	Else If Addres.ReadWheel = StrAddr(0) AND choice.ReadWheel = "Off" AND Set.ReadWheel = "yes" Then
@@ -880,3 +929,4 @@ Sub SetGroups_Click
 		LabAddress.Text = "Groups"
 	End If 	
 End Sub
+		
