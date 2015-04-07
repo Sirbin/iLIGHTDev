@@ -3,7 +3,7 @@ Version=4.3
 ModulesStructureVersion=1
 B4A=true
 @EndOfDesignText@
- #Region  Activity Attributes 
+#Region  Activity Attributes 
 	#FullScreen: False
 	#IncludeTitle: True
 #End Region
@@ -12,7 +12,7 @@ Sub Process_Globals
 	'These global variables will be declared once when the application starts.
 	'These variables can be accessed from all modules.
    	Dim Timer1,Timer2 ,Timer3 As Timer
-	Dim timercoll As Timer
+	Dim timercoll,TimerStop As Timer
 	'Public admin As BluetoothAdmin
 	'Public serial1 As Serial
 	'Public json As JSONParser
@@ -53,6 +53,9 @@ Sub Globals
 	Dim arr(5) As Int
 	Private SetAddress As ToggleButton
 	Private SetGroups As Button
+	
+	Dim Pwmvalue As Int ' valore del pwm generale per gruppi '
+	Dim LabAddress As Label
 End Sub
 
 Sub Activity_Create(FirstTime As Boolean)
@@ -73,6 +76,7 @@ Sub Activity_Create(FirstTime As Boolean)
 	Timer2.Enabled = True
 	Timer3.Initialize("Timer3",1000)
 	Timer3.Enabled = True
+	TimerStop.Initialize("TimerStop",1000)
 	If Main.admin.IsEnabled = False Then
 		Main.admin.Enable 
 		Log("Bt is ready") 	
@@ -113,7 +117,6 @@ Sub Activity_Resume
 End Sub		
 Sub Label_create
 
-	Dim LabAddress As Label
 	Dim LabSet As Label
 	Dim LabPing As Label
 	Dim LabDelay As Label
@@ -224,6 +227,7 @@ Sub wheel_create
 	Panel1.SetBackgroundImage(LoadBitmap(File.DirAssets,"cover.png"))
 	Activity.AddView(Panel1,50dip,125,930dip,svsstep*3)
 	DoEvents
+	
 End Sub 	
 Sub create_scr
 '	'Panel1 = Scroll.Panel
@@ -299,6 +303,7 @@ Sub init_label
 	Activity.AddView(Label1,100dip,100dip,150dip,40dip)
 End Sub
 Sub Astreams1_NewData (Buffer() As Byte)
+
 	Dim u As String
 	Dim lpos As Long
 	Dim rpos As Long
@@ -378,6 +383,7 @@ Sub TimerColl_tick
 End Sub	
 Sub Take_Address_Take_Pwm 
 ' Pwm Valor of Address
+
 		If Main.map1.Get("address64") = "0x0013a20040be447f" Then
 				StrAddrPwm(4) = Main.map1.Get("pwm") 
 		Else If Main.map1.Get("address64") = "0x0013a200406ff46e" Then 
@@ -387,8 +393,10 @@ Sub Take_Address_Take_Pwm
 		Else If Main.map1.Get("address64") = "0x0013a20040626109" Then 
 				StrAddrPwm(7) = Main.map1.Get("pwm")
 		End If	
+		
 	End Sub 	
 Sub BT_StateChanged(NewState As Int,OldState As Int)
+
 	If NewState = Main.admin.STATE_ON Then
 		Connect_3box
 		Log("BT Connect")
@@ -396,8 +404,10 @@ Sub BT_StateChanged(NewState As Int,OldState As Int)
 		Main.serial1.Disconnect 
 		Log("BT Disconnect")
 	End If
+	
 End Sub
 Sub Serial1_Connected (success As Boolean)
+
  Dim msg As String 
 	Try 
 	If success = True Then
@@ -410,8 +420,10 @@ Sub Serial1_Connected (success As Boolean)
 	Catch
 		Return 
 	End Try	
+	
 End Sub
 Sub Connect_3box 
+
 	Public PariredDevices As Map
 	Dim MyDevice As String
 	MyDevice = "3box"
@@ -421,11 +433,13 @@ Sub Connect_3box
 		Log(Main.l)
 	End If 
 	Main.serial1.Connect(Main.l.Get(0))
+	
 End Sub	
 Sub Addres_tick
 	Addres.ReadWheel 
 End Sub 	
 Sub string_invPing(cmd As Int ,Addr As String)
+
 	Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))
 	If cmd = 1 Then 				' Set Ping ON
 		invio_dati = "1," & Addr & ";"
@@ -448,10 +462,11 @@ Sub string_invPing(cmd As Int ,Addr As String)
 	End If
 End Sub	
 Sub string_inv(cmd As Int, Addr As String, value As Int )
+	
 	Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))	
 	If cmd = 3 Then 				' Set Light Value
 		invio_dati = "3," & Addr & "," & value & ";"
-		'Log ( invio_dati)
+		Log ("dato inviato" & invio_dati)
 	Else If  cmd = 4 Then 				'Set Delay value (0 = Fast , 20 = Slow)
 		invio_dati = "4," & Addr & "," & value & ";"
 		Log ("prog" & invio_dati)
@@ -468,6 +483,7 @@ Sub string_inv(cmd As Int, Addr As String, value As Int )
 	
 End Sub 	
 Sub GoBack1_Click
+
     If Main.admin.IsEnabled = True Then 
 		Main.admin.disable
 		Log("Bt as Disable")
@@ -475,14 +491,28 @@ Sub GoBack1_Click
 	Activity.Finish
 	l.Clear
 	StartActivity("main")
+	
 End Sub
 Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
+	
+	For index = 0 To PoliciesMode.StrAddr.Size	-1
+		If UserChanged = True  AND Addres.ReadWheel = PoliciesMode.StrAddr.Get(index) AND Set.ReadWheel = "yes" Then
+				Timer1.Enabled = False
+				UserChanged = False 
+				If UserChanged = False Then
+					TimerStop.Initialize("TimerStop",1000)
+					TimerStop.Enabled = True
+					Pwmvalue = value
+					Log ("Valore finale" & Pwmvalue)
+				End If				
+		End If
+	Next	
 	If UserChanged  AND Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" Then
 		If Timer1.Enabled = False Then 
 			Timer1.Enabled = True
 		End If 	
-		pwm_to_timer0 = value
-	End If 	
+			pwm_to_timer0 = value
+	End If 
 	If UserChanged AND Addres.ReadWheel = StrAddr(1) AND Set.ReadWheel = "yes" Then
 		If Timer1.Enabled = False Then 
 			Timer1.Enabled = True
@@ -503,7 +533,31 @@ Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
 	End If 
 
 End Sub
+Sub Timerstop_tick
+	sec = sec + 1
+	Log ("tIMER 1gruppo" & sec)		
+	Do While sec = 10 
+		For i = 0 To PoliciesMode.StrAddr.Size -1 
+			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" Then
+				Dim cursor1 As Cursor
+				cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String ' object save the query sql
+		    			Adrquery = cursor1.GetString("Address")
+						Log("verificare quale address esce" & Adrquery)
+						string_inv(3,Adrquery,Pwmvalue)
+					Next
+			End If	
+		Next			
+		sec = 0
+		TimerStop.Enabled = False
+		Log ("timer 2gruppo" & sec)
+	Loop	
+	
+End Sub
 Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
+	
 	If UserChanged AND	Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" Then
 		pwm_Pre0 = value
 		If Timer2.Enabled = False Then 
@@ -919,11 +973,17 @@ Sub SetAddress_CheckedChange(Checked As Boolean)
 End Sub
 Sub SetGroups_Click
 	'Pulsante che cambia la lista da grouppo a address'
-	
-	Log (PoliciesMode.StrAddr.Size)
+
 	If PoliciesMode.StrAddr.IndexOf("") = 0 OR PoliciesMode.StrAddr.Size = 0 Then
 		Msgbox("First Must Create Groups","Error")
+		Dim result As Int
+		result = Msgbox2("Do you want insert Groups","Error","Yes","","No",Null)
+		If result = DialogResponse.POSITIVE Then 
+			StartActivity("PoliciesMode")
+		Else
+		End If
 	Else If PoliciesMode.StrAddr.Size > 0 Then
 		Addres.UpdateList(PoliciesMode.StrAddr)
+		LabAddress.Text = "Groups"
 	End If 	
 End Sub
