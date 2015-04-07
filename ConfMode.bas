@@ -116,7 +116,8 @@ Sub Activity_Resume
 	End If 	
 End Sub		
 Sub Label_create
-
+	'Create all Label for ReadWheal'
+	
 	Dim LabSet As Label
 	Dim LabPing As Label
 	Dim LabDelay As Label
@@ -172,9 +173,6 @@ Sub wheel_create
 	'StrAddr1.Initialize2(Array As String ("0x0013a20040be447f","0x0013a200406ff46e","0x0013a20040332051","0x0013a20040626109"))
 	Log(StrAddr1)
 	
-	
-		
-	
 	StrAddr(0) = "0x0013a20040be447f"
 	StrAddr(1) = "0x0013a200406ff46e"
 	StrAddr(2) = "0x0013a20040332051"
@@ -228,71 +226,6 @@ Sub wheel_create
 	Activity.AddView(Panel1,50dip,125,930dip,svsstep*3)
 	DoEvents
 	
-End Sub 	
-Sub create_scr
-'	'Panel1 = Scroll.Panel
-'	'lstcheck.Initialize
-'	'Dim lbllux0 As Label
-'	'Dim lbllux1 As Label
-'	Dim lbllux2 As Label
-'	Dim lbllux3 As Label
-'	lbllux0.Initialize("")
-'	lbllux1.Initialize("")
-'	lbllux2.Initialize("")
-'	lbllux3.Initialize("")
-'	lbllux0.TextSize = 80
-'	lbllux0.TextColor = Colors.RGB(50,205,50)
-'	Panel1.AddView(lbllux0,50%x,9%x,80%x,50%y)
-'	lbllux1.TextSize = 80
-'	lbllux1.Color = Colors.Transparent
-'	lbllux1.TextColor = Colors.RGB(50,205,50)
-'	Panel1.AddView(lbllux1,50%x,19%x,80%x,50%y)
-'	
-'	chk0.Initialize("")
-'	chk1.Initialize("")
-'	chk2.Initialize("")
-'	chk3.Initialize("")
-'	chk0.Text = "0x0013a20040be447f"
-'	chk0.TextColor = Colors.RGB(227,227,227)
-'	chk0.TextSize = 45
-'	chk1.Text = "0x0013a200406ff46e"
-'	chk1.TextColor = Colors.RGB(227,227,227)
-'	chk1.TextSize = 45
-'	chk2.Text =  "0x0013a20040332051"
-'	chk2.TextColor = Colors.RGB(227,227,227)
-'	chk2.TextSize = 45
-'	chk3.Text = "0x0013a20040626109"
-'	chk3.TextColor = Colors.RGB(227,227,227)
-'	chk3.TextSize = 45
-''	lstcheck.AddAll(Array As String(chk0.Text,chk1.Text,chk2.Text,chk3.Text))
-''	For x = 0 To lstcheck.Size -1
-''		dat(0) = lstcheck.Get(0)
-''		dat(1) = lstcheck.Get(1)
-''		dat(2) = lstcheck.Get(2)
-''		dat(3) = lstcheck.Get(3)
-''		Log(dat(1))
-'		Log(dat(0))
-''	Next
-'	Panel1.AddView(chk0,0,0%x,50%x,50%y)
-'	Panel1.AddView(chk1,0,20%x,50%x,50%y)
-'	Panel1.AddView(chk2,0,40%x,100%x,50%y)
-'	Panel1.AddView(chk3,0,60%x,100%x,50%y)
-
-End Sub	
-Sub create_list
-'	dat(0) = "0x0013a20040be447f"
-'	dat(1) = "0x0013a200406ff46e"
-'	dat(2) = "0x0013a20040332051"
-'	dat(3) = "0x0013a20040626109"
-'	Address.AddSingleLine(dat(0))
-'	Address.AddSingleLine(dat(1))
-'	Address.AddSingleLine(dat(2))
-'	Address.AddSingleLine(dat(3))
-'	Address.SingleLineLayout.ItemHeight = 80dip
-'    Address.SingleLineLayout.Label.TextSize = 30
-'	Address.SingleLineLayout.Label.Gravity = Gravity.CENTER_HORIZONTAL
-'	Address.SingleLineLayout.Label.TextColor = Colors.RGB(227,227,227)
-'	init_label
 End Sub 	
 Sub Activity_Pause (UserClosed As Boolean)
 End Sub
@@ -372,6 +305,8 @@ Sub json_interpreter1 (jstr As String)
 	End Try	
 End Sub 	
 Sub TimerColl_tick
+	'When Bt Disable TimerColl try to connect to Bt every 5 sec'
+	
 	sec = sec + 1
 	If sec > 5 Then 
 			Main.admin.Enable
@@ -380,6 +315,7 @@ Sub TimerColl_tick
 					timercoll.Enabled = False
 				End If			
 	End If 
+	
 End Sub	
 Sub Take_Address_Take_Pwm 
 ' Pwm Valor of Address
