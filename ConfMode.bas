@@ -21,7 +21,11 @@ Sub Process_Globals
 	Public StrAddr(4) As String
 	Public add(4) As String ' provvisoria
 	Public sec,count As Int 
-	
+	Public admin As BluetoothAdmin
+	Public serial1 As Serial
+	Public json As JSONParser
+	Public map1 As Map
+	Public invio_dati As String 
 End Sub
 
 Sub Globals
@@ -39,6 +43,7 @@ Sub Globals
 	Public Label1 As Label
 	Dim l As List 
 	l.Initialize 
+	Dim str_,s As String
 	Private lblFont As Typeface
 	Private lblLuxValue As Label
 	Private Circle,Circle1,Circle2 As CircleSeek
@@ -47,14 +52,17 @@ Sub Globals
 	Private SetGroups As Button
 	Dim Pwmvalue As Int ' valore del pwm generale per gruppi '
 	Dim LabAddress As Label
+	Dim astreams1 As AsyncStreams
+	Dim sf As StringFunctions
+   	sf.Initialize
+
 End Sub
 
 Sub Activity_Create(FirstTime As Boolean)
 
 	If FirstTime Then 		
-		Main.admin.Initialize("BT")
-		Main.serial1.Initialize("Serial1")
-		Main.serial1.Connect(Main.l.Get(0))
+		admin.Initialize("BT")
+		serial1.Initialize("Serial1")
 		Activity.LoadLayout("ConfigurationWizard")
 		Label_create
 		wheel_create
@@ -69,14 +77,11 @@ Sub Activity_Create(FirstTime As Boolean)
 	Timer3.Initialize("Timer3",1000)
 	Timer3.Enabled = True
 	TimerStop.Initialize("TimerStop",1000)
-	If Main.admin.IsEnabled = False Then
-		Main.admin.Enable 
+	If admin.IsEnabled = False Then
+		admin.Enable 
 		Log("Bt is ready") 	
 	End If
-	If Main.serial1.IsEnabled = True Then
-		Main.serial1.Connect(Main.l.Get(0))
-		Log ("connesso")
-	End If 
+	 
 	
 End Sub
 Sub Activity_Resume
@@ -101,13 +106,10 @@ Sub Activity_Resume
 		Timer2.Enabled = True
 		Timer3.Enabled = True
 	End If 
-	If Main.admin.IsEnabled = False Then
- 		Main.admin.Enable
+	If admin.IsEnabled = False Then
+ 		admin.Enable
 	End If 	
-	If Main.serial1.IsEnabled = True Then 
-		Main.serial1.Connect(Main.l.Get(0))
-		Log ("connesso resume")
-	End If 	
+	 	
 	
 End Sub		
 Sub Label_create
@@ -236,20 +238,19 @@ Sub Astreams1_NewData (Buffer() As Byte)
 	Dim lpos As Long
 	Dim rpos As Long
 	u = u & BytesToString(Buffer, 0, Buffer.Length, "UTF8")
-	Main.str_ = Main.str_ & u 
-	Log(Main.str_)
-	If Main.str_.Length > 180 Then
-		lpos=Main.str_.IndexOf("{")
-		rpos=Main.str_.IndexOf2("}",lpos+1)
+	str_ = str_ & u 
+	If str_.Length > 180 Then
+		lpos= str_.IndexOf("{")
+		rpos= str_.IndexOf2("}",lpos+1)
 		If lpos < 0 Then
 			Log("lpos negativo ----------------------------------------------")
-			Main.str_=" "
+			str_=" "
 		End If		
 		If lpos>=0 Then
 			If rpos > lpos Then  	
-					Main.s = Main.sf.Mid(Main.str_,lpos+1,(rpos+lpos)+1)
-							json_interpreter1(Main.s)	'change the buffer'
-							Main.str_=Main.sf.Right(Main.str_,(Main.str_.Length-rpos)-1) 
+						s = sf.Mid(str_,lpos+1,(rpos+lpos)+1)
+							json_interpreter1(s)	'change the buffer'
+							str_= sf.Right(str_,(str_.Length-rpos)-1) 
 			End If
 		
 		End If 	
@@ -261,34 +262,34 @@ Sub json_interpreter1 (jstr As String)
 	'if "reply" controll the command and save in string, if "sensors take a date"
 	
 	Try 
-	Main.json.Initialize(jstr)
-	Main.map1.Initialize
-	Main.map1=Main.json.NextObject
-	If Main.map1.Get("pktype") = "hello" Then 
-		Main.lstaddr.add(Main.map1.Get("address64"))
-		Log (Main.lstaddr)
-	Else If Main.map1.Get("pktype") = "reply" Then
-		If Main.map1.Get("command") =  "3" Then
-			arr = Main.map1.Get("value")
-		Else If Main.map1.Get("command") = "1" Then
-			arr = Main.map1.Get("value")
-		Else If Main.map1.Get("command") = "2" Then
-			arr = Main.map1.Get("value") 	
-		Else If Main.map1.Get("command") = "4" Then
-			arr(1) = Main.map1.Get("value")
-		Else If Main.map1.Get("command") = 10 Then
-			arr(1) = Main.map1.Get("value")
-		Else If Main.map1.Get("command") = 11 Then
-			arr(2) = Main.map1.Get("value")
-		Else If Main.map1.Get("command") = 5 Then 
-			arr(3) = Main.map1.Get("value")
-		Else If Main.map1.Get("pktype") = "sensors" Then
+	json.Initialize(jstr)
+	map1.Initialize
+	map1= json.NextObject
+'	If 	map1.Get("pktype") = "hello" Then 
+'		Main.lstaddr.add(map1.Get("address64"))
+'		Log (Main.lstaddr)
+	 If map1.Get("pktype") = "reply" Then
+		If map1.Get("command") =  "3" Then
+			arr = map1.Get("value")
+		Else If map1.Get("command") = "1" Then
+			arr = map1.Get("value")
+		Else If map1.Get("command") = "2" Then
+			arr = map1.Get("value") 	
+		Else If map1.Get("command") = "4" Then
+			arr(1) = map1.Get("value")
+		Else If map1.Get("command") = 10 Then
+			arr(1) = map1.Get("value")
+		Else If map1.Get("command") = 11 Then
+			arr(2) = map1.Get("value")
+		Else If map1.Get("command") = 5 Then 
+			arr(3) = map1.Get("value")
+		Else If map1.Get("pktype") = "sensors" Then
 		End If 
-	Else If Main.map1.Get("pktype") = "sensors" Then 	
+	Else If map1.Get("pktype") = "sensors" Then 	
 		Take_Address_Take_Pwm
 	End If  	
 	Catch
-		Main.admin.Disable 
+		admin.Disable 
 		timercoll.Initialize("TimerColl", 1000)
 		timercoll.Enabled = True
 	End Try	
@@ -298,9 +299,9 @@ Sub TimerColl_tick
 	
 	sec = sec + 1
 	If sec > 5 Then 
-			Main.admin.Enable
+			admin.Enable
 			BT_StateChanged(1,0)
-				If Main.admin.Enable = True Then
+				If admin.Enable = True Then
 					timercoll.Enabled = False
 				End If			
 	End If 
@@ -309,25 +310,25 @@ End Sub
 Sub Take_Address_Take_Pwm 
 ' Pwm Valor of Address and save in string, need when compare with real pwm'
 
-		If Main.map1.Get("address64") = "0x0013a20040be447f" Then
-				StrAddrPwm(4) = Main.map1.Get("pwm") 
-		Else If Main.map1.Get("address64") = "0x0013a200406ff46e" Then 
-				StrAddrPwm(5) = Main.map1.Get("pwm")
-		Else If Main.map1.Get("address64") = "0x0013a20040332051" Then
-				StrAddrPwm(6) = Main.map1.Get("pwm")
-		Else If Main.map1.Get("address64") = "0x0013a20040626109" Then 
-				StrAddrPwm(7) = Main.map1.Get("pwm")
+		If map1.Get("address64") = "0x0013a20040be447f" Then
+				StrAddrPwm(4) = map1.Get("pwm") 
+		Else If map1.Get("address64") = "0x0013a200406ff46e" Then 
+				StrAddrPwm(5) = map1.Get("pwm")
+		Else If map1.Get("address64") = "0x0013a20040332051" Then
+				StrAddrPwm(6) = map1.Get("pwm")
+		Else If map1.Get("address64") = "0x0013a20040626109" Then 
+				StrAddrPwm(7) = map1.Get("pwm")
 		End If	
 		
 	End Sub 	
 Sub BT_StateChanged(NewState As Int,OldState As Int)
 	' connect to 3box '
 	
-	If NewState = Main.admin.STATE_ON Then
+	If NewState = admin.STATE_ON Then
 		Connect_3box
 		Log("BT Connect")
 	Else 
-		Main.serial1.Disconnect 
+		serial1.Disconnect 
 		Log("BT Disconnect")
 	End If
 	
@@ -335,14 +336,14 @@ End Sub
 Sub Serial1_Connected (success As Boolean)
 ' connect to serial Bt and ready to send the astream'
 
- Dim msg As String 
+
 	Try 
 	If success = True Then
 		ToastMessageShow("Bluetooth connect with success" ,True)
-		ToastMessageShow("Bluetooth connected to " & Main.l.Get(0),False)				
-		Main.astreams1.Initialize(Main.serial1.InputStream,Main.serial1.OutputStream,"AStreams1")
+		ToastMessageShow("Bluetooth connected to " & l.Get(0),False)				
+		astreams1.Initialize(serial1.InputStream,serial1.OutputStream,"AStreams1")
 	Else	
-		ToastMessageShow("Connection to " & Main.l.Get(0) & "broken!",True)
+		ToastMessageShow("Connection to " & l.Get(0) & "broken!",True)
 	End If
 	Catch
 		Return 
@@ -355,24 +356,30 @@ Sub Connect_3box
 	Public PariredDevices As Map
 	Dim MyDevice As String
 	MyDevice = "3box"
-	PariredDevices = Main.serial1.GetPairedDevices		
+	PariredDevices = serial1.GetPairedDevices		
 	If PariredDevices.ContainsKey(MyDevice) Then 
-		Main.l.add(PariredDevices.Get(MyDevice))
-		Log(Main.l)
+		l.add(PariredDevices.Get(MyDevice))
+		Log(l)
 	End If 
-	Main.serial1.Connect(Main.l.Get(0))
+	serial1.Connect(l.Get(0))
 	
 End Sub	
 Sub Addres_tick
-	'read address read.wheel'
-	
-	Addres.ReadWheel 
-	
+	If Addres.ReadWheel = StrAddr(0) Then
+		Circle.Value = pwm_to_timer0
+	Else If Addres.ReadWheel = StrAddr(1) Then	
+		Circle.Value = pwm_to_timer1
+	Else If Addres.ReadWheel = StrAddr(2) Then
+		Circle.Value = pwm_to_timer2
+	Else If Addres.ReadWheel = StrAddr(3) Then
+		Circle.Value = pwm_to_timer3
+	End If
+
 End Sub 	
 Sub string_invPing(cmd As Int ,Addr As String)
 	'create type string'
 	
-	'Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))
+	astreams1.Write(invio_dati.GetBytes("UTF-8"))
 	Select cmd
 	Case 1
 		invio_dati = "1," & Addr & ";"
@@ -418,7 +425,7 @@ End Sub
 Sub string_inv(cmd As Int, Addr As String, value As Int )
 	'creare a second type string add a value takes to circle'
 	
-	Main.astreams1.Write(invio_dati.GetBytes("UTF-8"))	
+	astreams1.Write(invio_dati.GetBytes("UTF-8"))	
 	If cmd = 3 Then 				' Set Light Value
 		invio_dati = "3," & Addr & "," & value & ";"
 		Log ("dato inviato" & invio_dati)
@@ -440,8 +447,8 @@ End Sub
 Sub GoBack1_Click
 	'Button to return in Main Page'
 	
-    If Main.admin.IsEnabled = True Then 
-		Main.admin.disable
+    If admin.IsEnabled = True Then 
+		admin.disable
 		Log("Bt as Disable")
 	End If 
 	Activity.Finish
@@ -509,6 +516,7 @@ Sub Timerstop_tick
 						Dim Adrquery As String ' object save the query sql
 		    			Adrquery = cursor1.GetString("Address")
 						Log("verificare quale address esce" & Adrquery)
+						string_inv(3,Adrquery,Pwmvalue)
 						string_inv(3,Adrquery,Pwmvalue)
 					Next
 			End If	
@@ -739,7 +747,8 @@ Sub SetPingOn_Off
 						cursor1.Position = i
 						Dim Adrquery As String 
 		    			Adrquery = cursor1.GetString("Address")
-						string_invPing(1,Adrquery) 	
+						string_invPing(1,Adrquery)
+						string_invPing(1,Adrquery)
 					Next
 			Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND choice.ReadWheel = "Off" Then
 				Dim cursor1 As Cursor
@@ -748,7 +757,8 @@ Sub SetPingOn_Off
 						cursor1.Position = i
 						Dim Adrquery As String 
 		    			Adrquery = cursor1.GetString("Address")
-						string_invPing(2,Adrquery) 	
+						string_invPing(2,Adrquery)
+						string_invPing(2,Adrquery)
 					Next
 			End If	
 	Next	
@@ -814,6 +824,19 @@ Sub DelayOn_Off_tick
 	DelayOnOff
 End Sub 	
 Sub DelayOnOff
+	For i = 0 To PoliciesMode.StrAddr.Size -1
+		If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND DelayOn_Off.ReadWheel = "DelayMax" Then
+		Dim cursor1 As Cursor
+			cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String 
+		    			Adrquery = cursor1.GetString("Address")
+						string_inv(4,Adrquery,0)
+						string_inv(4,Adrquery,0)
+					Next
+		End If
+	Next	
 	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND DelayOn_Off.ReadWheel = "DelayMax" Then
 		string_inv(4,StrAddr(0),0)
 		string_inv(4,StrAddr(0),0) 	
@@ -921,7 +944,11 @@ Sub SetGroups_Click
 		Dim result As Int
 		result = Msgbox2("Do you want insert Groups","Error","Yes","","No",Null)
 		If result = DialogResponse.POSITIVE Then 
+			If admin.IsEnabled = True Then
+				admin.Disable
+			End If 	
 			StartActivity("PoliciesMode")
+			
 		Else
 		End If
 	Else If PoliciesMode.StrAddr.Size > 0 Then

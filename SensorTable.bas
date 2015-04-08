@@ -92,31 +92,20 @@ Sub Astreams1_NewData (Buffer() As Byte)
 	Dim u As String
 	Dim lpos As Long
 	Dim rpos As Long
-	u = BytesToString(Buffer, 0, Buffer.Length, "UTF8")
+	u = u & BytesToString(Buffer, 0, Buffer.Length, "UTF8")
 	str_ = str_ & u
-	'Log ("buffer lenght" & Buffer.Length)
-	Log(str_)
-	'Log(str_.Length)
 	If str_.Length > 180 Then
 		lpos=str_.IndexOf("{")
 		rpos=str_.IndexOf2("}",lpos+1)
-		'Log ("inizio" &lpos)
-		'Log ("fine" &rpos)
-		'rpos = str_.IndexOf("}")
 		If lpos < 0 Then
 			'Log("lpos negativo ----------------------------------------------")
 			str_=" "
 		End If		
 		If lpos>=0 Then
 			If rpos > lpos Then  	
-					'If str_.Length < 170 Then
 					s = sf.Mid(str_,lpos+1,(rpos+lpos)+1)
-						'If s.Length < 170 Then
 							json_interpreter1(s)	'change the buffer'
 							str_=sf.Right(str_,(str_.Length-rpos)-1)
-						'Else 
-							'str_=""
-						'End If 
 			End If
 		
 		End If 	
@@ -126,6 +115,7 @@ Sub json_interpreter1 (jstr As String)
 	Try
 	json.Initialize(jstr)
 	map1.Initialize
+	Log ("dato" & jstr)
 	map1=json.NextObject
 		If map1.Get("address64") = "0x0013a20040be447f" Then 
 			table1.UpdateRow(0,Array As String(map1.Get("address64"),map1.Get("power") ,map1.Get("temperature") ,map1.Get("humidity"),map1.Get("lux"),map1.Get("co2"),map1.Get("presence"),map1.Get("voltage"),map1.Get("pwm")))   				
@@ -157,7 +147,6 @@ Sub Clock1_tick
 End Sub
 
 Sub Activity_Resume 
-	'hbar.Value = 75
 	If admin.IsEnabled = False Then
  		admin.Enable
 	End If
