@@ -13,8 +13,7 @@ Sub Process_Globals
 	'These variables can be accessed from all modules.
    	
 	Dim Timer1,Timer2 ,Timer3 As Timer
-	Dim timercoll,TimerStop As Timer
-	Public invio_dati As String 
+	Dim timercoll,TimerStopPwm,TimerStopPresence As Timer
 	Public StrAddrPwm(10) As Int
 	Public StrAddr1 As List ''' Prova si stringhe gia inserite
 	StrAddr1.Initialize2(Array As String ("0x0013a20040be447f","0x0013a200406ff46e","0x0013a20040332051","0x0013a20040626109"))
@@ -50,7 +49,8 @@ Sub Globals
 	Dim arr(5) As Int
 	Private SetAddress As ToggleButton
 	Private SetGroups As Button
-	Dim Pwmvalue As Int ' valore del pwm generale per gruppi '
+	Dim Pwmvalue , PresenceHiLowvalue As Int ' valore del pwm generale per gruppi '
+	
 	Dim LabAddress As Label
 	Dim astreams1 As AsyncStreams
 	Dim sf As StringFunctions
@@ -76,7 +76,8 @@ Sub Activity_Create(FirstTime As Boolean)
 	Timer2.Enabled = True
 	Timer3.Initialize("Timer3",1000)
 	Timer3.Enabled = True
-	TimerStop.Initialize("TimerStop",1000)
+	TimerStopPwm.Initialize("TimerStopPwm",1000)
+	TimerStopPresence.Initialize("TimerStopPresence",1000)
 	If admin.IsEnabled = False Then
 		admin.Enable 
 		Log("Bt is ready") 	
@@ -305,7 +306,8 @@ Sub TimerColl_tick
 					timercoll.Enabled = False
 				End If			
 	End If 
-	
+	TimerStopPwm.Enabled = False ' case the Bt Down
+	TimerStopPresence.Enabled = False 
 End Sub	
 Sub Take_Address_Take_Pwm 
 ' Pwm Valor of Address and save in string, need when compare with real pwm'
@@ -389,38 +391,17 @@ Sub string_invPing(cmd As Int ,Addr As String)
 		Log ("pingoff" &invio_dati)
 	Case 6
 		invio_dati = "6," & Addr & ";"
-		Log (invio_dati)
+		Log ("Follow On " & invio_dati)
 	Case 7
 		invio_dati = "7," & Addr & ";"
-		Log (invio_dati)
+		Log ("Follw Off " & invio_dati)
 	Case 8
 		invio_dati = "8," & Addr & ";"
-		Log (invio_dati)
+		Log ("Presence On" & invio_dati)
 	Case 9
 		invio_dati = "9," & Addr & ";"
-		Log (invio_dati)
+		Log ("Presence Off" & invio_dati)
 	End Select
-	
-'	If cmd = 1 Then 				' Set Ping ON
-'		invio_dati = "1," & Addr & ";"
-'		Log ("pingon" &invio_dati)
-'	Else If cmd = 2 Then            ' Set Ping OFF
-'		invio_dati = "2," & Addr & ";" 
-'		Log ("pingoff" &invio_dati)
-'	Else If cmd = 6 Then  			' Set Follow On
-'		invio_dati = "6," & Addr & ";"
-'		Log (invio_dati)
-'	Else If cmd = 7 Then			' Set Follow OFF
-'		invio_dati = "7," & Addr & ";"
-'		Log (invio_dati)
-'	Else If cmd = 8 Then			' Set Presence On
-'		invio_dati = "8," & Addr & ";"
-'		Log (invio_dati)
-'	Else If cmd = 9 Then			' Set Presence OFF
-'		invio_dati = "9," & Addr & ";"
-'		Log (invio_dati)
-'	End If
-'	
 End Sub	
 Sub string_inv(cmd As Int, Addr As String, value As Int )
 	'creare a second type string add a value takes to circle'
@@ -428,19 +409,19 @@ Sub string_inv(cmd As Int, Addr As String, value As Int )
 	astreams1.Write(invio_dati.GetBytes("UTF-8"))	
 	If cmd = 3 Then 				' Set Light Value
 		invio_dati = "3," & Addr & "," & value & ";"
-		Log ("dato inviato" & invio_dati)
+		Log ("Pwm" & invio_dati)
 	Else If  cmd = 4 Then 				'Set Delay value (0 = Fast , 20 = Slow)
 		invio_dati = "4," & Addr & "," & value & ";"
-		Log ("prog" & invio_dati)
+		Log ("Delay" & invio_dati)
 	Else If cmd = 5 Then 			' Set FollowLux Value
 		invio_dati = "5," & Addr & "," & value & ";"
-		Log (invio_dati)
+		Log ("Foll value " & invio_dati)
 	Else If cmd = 10 Then 			' Set Presence High Value
 		invio_dati = "10," & Addr & "," & value & ";"
-		'Log (invio_dati)
+		Log ("Presence Hi" & invio_dati)
 	Else If cmd = 11 Then 			' Set Presence Low Value
 		invio_dati = "11," & Addr & "," & value & ";"
-		'Log (invio_dati)	
+		Log ("Presence Low" & invio_dati)	
 	End If
 	
 End Sub 	
@@ -457,6 +438,7 @@ Sub GoBack1_Click
 	
 End Sub
 Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
+	
 	'circle value for pwn, if choice Groups stop timer1 and userchange set to false and read the value'
 	' the value is always Pwmvalue for all grousp , after start a timerstop that every 10 second controll'
 	' a value.'
@@ -467,8 +449,8 @@ Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
 				Timer1.Enabled = False
 				UserChanged = False 
 				If UserChanged = False Then
-					TimerStop.Initialize("TimerStop",1000)
-					TimerStop.Enabled = True
+					TimerStopPwm.Initialize("TimerStopPwm",1000)
+					TimerStopPwm.Enabled = True
 					Pwmvalue = value
 					Log ("Valore finale" & Pwmvalue)
 				End If				
@@ -500,14 +482,15 @@ Sub Circle_ValueChanged(value As Int,UserChanged As Boolean)
 	End If 
 
 End Sub
-Sub Timerstop_tick
+Sub TimerstopPwm_tick
 	'new'
 	'the timer that controll the value and send the right string_inv ground on numenb of sql address'
+	'connect to Circle Value'
 	
 	sec = sec + 1
-	Log ("Timer1 Gruppo" & sec)		
+	Log ("Timer1 Gruppo CirclePwm" & sec)		
 	Do While sec = 10 
-		For i = 0 To PoliciesMode.StrAddr.Size -1 
+		For i = 0 To PoliciesMode.StrAddr.Size -1
 			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" Then
 				Dim cursor1 As Cursor
 				cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
@@ -519,16 +502,34 @@ Sub Timerstop_tick
 						string_inv(3,Adrquery,Pwmvalue)
 						string_inv(3,Adrquery,Pwmvalue)
 					Next
-			End If	
+			End If 		
 		Next			
 		sec = 0
-		TimerStop.Enabled = False
-		Log ("Timer2 gruppo" & sec)
+		TimerStopPwm.Enabled = False
 	Loop	
 	
 End Sub
 Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
+	
 	' Circle to presence need modify for Groups'
+	
+	' Groups Value'
+	
+	For index = 0 To PoliciesMode.StrAddr.Size	-1
+		If UserChanged = True  AND Addres.ReadWheel = PoliciesMode.StrAddr.Get(index) AND Set.ReadWheel = "yes"  Then
+				Timer1.Enabled = False
+				Timer2.Enabled = False
+				UserChanged = False 
+				If UserChanged = False Then
+					TimerStopPresence.Initialize("TimerStopPresence",1000)
+					TimerStopPresence.Enabled = True
+					PresenceHiLowvalue = value
+					Log ("Valore finale" & Pwmvalue)
+				End If				
+		End If
+	Next
+	
+	'Single Value'
 	
 	If UserChanged AND	Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" Then
 		pwm_Pre0 = value
@@ -556,7 +557,32 @@ Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
 	End If 
 	
 End Sub
+Sub TimerstopPresence_tick
+	
+	sec = sec + 1
+	Log ("Timer1 Gruppo CirclePresence" & sec)		
+	Do While sec = 10 
+		For i = 0 To PoliciesMode.StrAddr.Size -1
+			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND PresenceHi_LOW.ReadWheel = "PreLuxHi" Then
+				Dim cursor1 As Cursor
+				cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String ' object save the query sql
+		    			Adrquery = cursor1.GetString("Address")
+						Log("verificare quale address esce" & Adrquery)
+						string_inv(10,Adrquery,PresenceHiLowvalue)
+						string_inv(10,Adrquery,PresenceHiLowvalue)
+					Next
+			End If
+		Next			
+		sec = 0
+		TimerStopPresence.Enabled = False
+	Loop	
+	
+End Sub
 Sub Circle2_ValueChanged(value As Int ,UserChanged As Boolean)
+
 	'circle for follow need modify for Groups
 	
 		If Timer3.Enabled = False Then 
@@ -690,6 +716,7 @@ Sub Timer2_tick
 			Log ("valori uguali")
 		End If 	
 	End If
+	
 End Sub 
 	
 Sub PresenceOn_OFF_tick
@@ -698,7 +725,35 @@ Sub PresenceOn_OFF_tick
 End Sub 
 
 Sub presenceOnOff
-
+	'Set Presence Single Lamp and Groups Lamp'
+	
+	'Groups Presence'
+	
+	For i = 0 To PoliciesMode.StrAddr.Size -1
+		If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND PresenceOn_OFF.ReadWheel = "PresOn" Then
+		Dim cursor1 As Cursor
+			cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String 
+		    			Adrquery = cursor1.GetString("Address")
+						string_invPing(8,Adrquery)
+						string_invPing(8,Adrquery)
+					Next		
+		Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND PresenceOn_OFF.ReadWheel = "PresOff" Then
+		Dim cursor2	As Cursor
+			cursor2 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor2.RowCount -1		
+						cursor2.Position = i
+		    			Adrquery = cursor2.GetString("Address")
+						string_invPing(9,Adrquery)
+						string_invPing(9,Adrquery)
+					Next
+		End If
+	Next
+	
+	'Single Presence'
+	
 	If Addres.ReadWheel = StrAddr(0) AND PresenceOn_OFF.ReadWheel = "PresOn" AND Set.ReadWheel = "yes" Then
 		string_invPing(8,StrAddr(0))
 		Timer1.Enabled = False
@@ -731,13 +786,16 @@ Sub presenceOnOff
 		string_invPing(9,StrAddr(3))
 		Timer1.Enabled = False
 	End If 
+	
 End Sub	
 Sub choice_tick
 	SetPingOn_Off
 End Sub	
 Sub SetPingOn_Off
-	'new'
+	
 	'set Ping on Groups and single Address"
+	
+	'Groups Lamp'
 	
 	For i = 0 To PoliciesMode.StrAddr.Size -1 
 			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND choice.ReadWheel = "On" Then
@@ -761,7 +819,10 @@ Sub SetPingOn_Off
 						string_invPing(2,Adrquery)
 					Next
 			End If	
-	Next	
+	Next
+	
+	'Single Lamp'
+	
 	If Addres.ReadWheel = StrAddr(0) AND choice.ReadWheel = "On" AND Set.ReadWheel = "yes" Then
 		string_invPing(1,StrAddr(0))
 	Else If Addres.ReadWheel = StrAddr(0) AND choice.ReadWheel = "Off" AND Set.ReadWheel = "yes" Then
@@ -824,6 +885,11 @@ Sub DelayOn_Off_tick
 	DelayOnOff
 End Sub 	
 Sub DelayOnOff
+	'  fast o slow delay lamp'
+	' 0 = max fast; 10 = medium; 20 = slow;
+	
+	' Groups Lamp'
+	
 	For i = 0 To PoliciesMode.StrAddr.Size -1
 		If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND DelayOn_Off.ReadWheel = "DelayMax" Then
 		Dim cursor1 As Cursor
@@ -835,8 +901,27 @@ Sub DelayOnOff
 						string_inv(4,Adrquery,0)
 						string_inv(4,Adrquery,0)
 					Next
+		Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND DelayOn_Off.ReadWheel = "DelayMed" Then
+			cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+		    			Adrquery = cursor1.GetString("Address")
+						string_inv(4,Adrquery,10)
+						string_inv(4,Adrquery,10)
+					Next
+		Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND DelayOn_Off.ReadWheel = "DelayMin" Then			
+			cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+		    			Adrquery = cursor1.GetString("Address")
+						string_inv(4,Adrquery,20)
+						string_inv(4,Adrquery,20)
+					Next
 		End If
-	Next	
+	Next
+	
+	'Single Lamp'
+	
 	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND DelayOn_Off.ReadWheel = "DelayMax" Then
 		string_inv(4,StrAddr(0),0)
 		string_inv(4,StrAddr(0),0) 	
@@ -877,6 +962,7 @@ Sub DelayOnOff
 			string_inv(4,StrAddr(3),20)
 			string_inv(4,StrAddr(3),20)
 	End If 
+	
 End Sub 	
 Sub Timer1_Tick
 	count = count + 1
