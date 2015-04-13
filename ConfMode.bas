@@ -524,7 +524,7 @@ Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
 					TimerStopPresence.Initialize("TimerStopPresence",1000)
 					TimerStopPresence.Enabled = True
 					PresenceHiLowvalue = value
-					Log ("Valore finale" & Pwmvalue)
+					Log ("Valore finale" & PresenceHiLowvalue)
 				End If				
 		End If
 	Next
@@ -573,6 +573,17 @@ Sub TimerstopPresence_tick
 						Log("verificare quale address esce" & Adrquery)
 						string_inv(10,Adrquery,PresenceHiLowvalue)
 						string_inv(10,Adrquery,PresenceHiLowvalue)
+					Next
+			Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND PresenceHi_LOW.ReadWheel = "PreLuxLo" Then		
+				Dim cursor2 As Cursor
+				cursor2 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor2.RowCount -1		
+						cursor2.Position = i
+						Dim Adrquery As String ' object save the query sql
+		    			Adrquery = cursor2.GetString("Address")
+						Log("verificare quale address esce" & Adrquery)
+						string_inv(11,Adrquery,PresenceHiLowvalue)
+						string_inv(11,Adrquery,PresenceHiLowvalue)
 					Next
 			End If
 		Next			
