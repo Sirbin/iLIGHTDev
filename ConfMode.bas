@@ -404,26 +404,45 @@ Sub string_invPing(cmd As Int ,Addr As String)
 	End Select
 End Sub	
 Sub string_inv(cmd As Int, Addr As String, value As Int )
+	
 	'creare a second type string add a value takes to circle'
 	
-	astreams1.Write(invio_dati.GetBytes("UTF-8"))	
-	If cmd = 3 Then 				' Set Light Value
-		invio_dati = "3," & Addr & "," & value & ";"
+	astreams1.Write(invio_dati.GetBytes("UTF-8"))
+	Select cmd
+	Case 3
+		invio_dati = "3," & Addr & "," & value & ";" 'Set Pwm Value
 		Log ("Pwm" & invio_dati)
-	Else If  cmd = 4 Then 				'Set Delay value (0 = Fast , 20 = Slow)
-		invio_dati = "4," & Addr & "," & value & ";"
+	Case 4
+		invio_dati = "4," & Addr & "," & value & ";" 'Set Delay Value ( 0 = Fast , 10 = Med ,20 = Slow)
 		Log ("Delay" & invio_dati)
-	Else If cmd = 5 Then 			' Set FollowLux Value
-		invio_dati = "5," & Addr & "," & value & ";"
-		Log ("Foll value " & invio_dati)
-	Else If cmd = 10 Then 			' Set Presence High Value
-		invio_dati = "10," & Addr & "," & value & ";"
+	Case 5 
+		invio_dati = "5," & Addr & "," & value & ";" 'Set FollowLux Value
+		Log ("Foll value" & invio_dati)
+	Case 10
+		invio_dati = "10," & Addr & "," & value & ";" 'Set Presence High Value
 		Log ("Presence Hi" & invio_dati)
-	Else If cmd = 11 Then 			' Set Presence Low Value
-		invio_dati = "11," & Addr & "," & value & ";"
-		Log ("Presence Low" & invio_dati)	
-	End If
+	Case 11 
+		invio_dati = "11," & Addr & "," & value & ";" 'Set Presence Low Value
+		Log ("Presence Low" & invio_dati) 
+	End Select
 	
+'	If cmd = 3 Then 				' Set Light Value
+'		invio_dati = "3," & Addr & "," & value & ";"
+'		Log ("Pwm" & invio_dati)
+'	Else If  cmd = 4 Then 				'Set Delay value (0 = Fast , 20 = Slow)
+'		invio_dati = "4," & Addr & "," & value & ";"
+'		Log ("Delay" & invio_dati)
+'	Else If cmd = 5 Then 			' Set FollowLux Value
+'		invio_dati = "5," & Addr & "," & value & ";"
+'		Log ("Foll value " & invio_dati)
+'	Else If cmd = 10 Then 			' Set Presence High Value
+'		invio_dati = "10," & Addr & "," & value & ";"
+'		Log ("Presence Hi" & invio_dati)
+'	Else If cmd = 11 Then 			' Set Presence Low Value
+'		invio_dati = "11," & Addr & "," & value & ";"
+'		Log ("Presence Low" & invio_dati)	
+'	End If
+'	
 End Sub 	
 Sub GoBack1_Click
 	'Button to return in Main Page'
@@ -558,6 +577,8 @@ Sub Circle1_ValueChanged(value As Int,UserChanged As Boolean)
 	
 End Sub
 Sub TimerstopPresence_tick
+	
+	'the Timer that controll the presence low7hi  AND send the right string_inv ground on numenb of SQL Address'
 	
 	sec = sec + 1
 	Log ("Timer1 Gruppo CirclePresence" & sec)		
@@ -867,6 +888,36 @@ Sub FollowLuxOn_Off_tick
 	FollowLuxOnOff
 End Sub 
 Sub FollowLuxOnOff
+	' Set Follow single Lamp and Groups Lamp
+	
+	'Follow Grous'
+	
+	For i = 0 To PoliciesMode.StrAddr.Size -1 
+			If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
+				Dim cursor1 As Cursor
+				cursor1 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor1.RowCount -1		
+						cursor1.Position = i
+						Dim Adrquery As String 
+		    			Adrquery = cursor1.GetString("Address")
+						string_invPing(6,Adrquery)
+						string_invPing(6,Adrquery)
+					Next
+			Else If Addres.ReadWheel = PoliciesMode.StrAddr.Get(i) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOff" Then
+				Dim cursor2 As Cursor
+				cursor2 = Main.SQL1.ExecQuery2("SELECT Address FROM Address WHERE Groups = ? or Groups1 = ? ",Array As String(Addres.ReadWheel,Addres.ReadWheel))
+					For i = 0 To cursor2.RowCount -1		
+						cursor2.Position = i
+						Dim Adrquery As String 
+		    			Adrquery = cursor2.GetString("Address")
+						string_invPing(7,Adrquery)
+						string_invPing(7,Adrquery)
+					Next
+			End If 
+	Next
+	
+	'Follow Single'
+	
 	If Addres.ReadWheel = StrAddr(0) AND Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOn" Then
 		string_invPing(6,StrAddr(0))
 	Else If Addres.ReadWheel = StrAddr(0) AND  Set.ReadWheel = "yes" AND FollowLuxOn_Off.ReadWheel = "FolOff" Then	
